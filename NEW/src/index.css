@@ -1,0 +1,338 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* --- Base & Dashboard Styles --- */
+:root {
+    --dark-bg: #0a0a0a;
+    --card-bg: #161616;
+    --button-bg: #2a2a2a;
+    --text-primary: #f0f0f0;
+    --text-secondary: #A0AEC0;
+    --border-color: #2f2f2f;
+    --vibrant-purple: #a855f7;
+    --vibrant-indigo: #6366f1;
+    --vibrant-cyan: #6d94f0;
+    --vibrant-pink: #ff007f;
+    --vibrant-orange: #F6AD55;
+    --whatsapp-green: #25d366;
+    --shadow-color: rgba(0, 0, 0, 0.7);
+    --glow-pink: rgba(255, 0, 127, 0.3);
+    --glow-purple: rgba(139, 92, 246, 0.4);
+    --glow-cyan: rgba(0, 242, 255, 0.3);
+    --glow-orange: rgba(246, 173, 85, 0.3);
+    --transition-speed: 0.3s;
+    /* New variables for filter popup */
+    --text-light: #d1d5db; /* gray-300 */
+    --text-lighter: #e5e7eb; /* gray-200 */
+    --input-background: #18181b; /* gray-800 */
+    --surface-dark-lighter: #18181b; /* gray-800 */
+    --surface-dark-deep: #18181b; /* gray-900 */
+}
+body {
+    font-family: 'Inter', sans-serif;
+    color: var(--text-primary);
+    background-color: var(--dark-bg);
+    background-image: radial-gradient(circle at 1px 1px, #1c1c1c 1px, transparent 0);
+    background-size: 2rem 2rem;
+    height: 100vh;
+    overflow: hidden;
+}
+.aurora-container { position: fixed; top: 0; left: 0; width: 100%; height: 100%; overflow: hidden; z-index: -1; }
+.aurora-glow { position: absolute; border-radius: 50%; opacity: 0.2; filter: blur(120px); }
+.title-gradient { font-family: 'Poppins', sans-serif; background: -webkit-linear-gradient(left, var(--vibrant-indigo), var(--vibrant-purple)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+#sidebar { background: linear-gradient(145deg, #080118, #101010); z-index: 50; }
+.nav-link.active { color: white !important; background-image: linear-gradient(to right, var(--vibrant-indigo), var(--vibrant-purple)); box-shadow: 0 4px 20px -5px rgba(168, 85, 247, 0.5); }
+.glassmorphic { background-color: rgba(16, 16, 16, 0.6); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); z-index: 40; }
+
+/* --- Form Styling (from m5.html) --- */
+.form-container { background: #111111 linear-gradient(135deg, #18181b 0%, #111111 100%); border: 1px solid #27272a; box-shadow: 0 20px 50px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(99, 102, 241, 0.2); animation: fadeIn 0.6s ease-out; }
+.input-field, .dropdown-field, .textarea-field { background-color: #18181b; border: 1px solid #3f3f46; color: var(--text-primary); transition: all 0.2s ease-in-out; }
+.input-field::placeholder, .textarea-field::placeholder { color: #52525b; }
+.input-field:focus, .dropdown-field:focus, .textarea-field:focus { outline: none; border-color: #6366f1; box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.3); background-color: #27272a; }
+.stylish-button { background-image: linear-gradient(to right, #6366f1 0%, #8b5cf6 51%, #6366f1 100%); transition: 0.5s; background-size: 200% auto; color: white; border: none; font-family: 'Poppins', sans-serif; }
+.stylish-button:hover { background-position: right center; transform: translateY(-3px); box-shadow: 0 10px 20px rgba(0, 0, 0, 0.4); }
+.radio-label { display: block; padding: 0.75rem 1.5rem; border-radius: 0.5rem; border: 1px solid #3f3f46; background-color: #18181b; cursor: pointer; transition: all 0.2s ease-in-out; text-align: center; }
+.radio-label:hover { border-color: #52525b; }
+.radio-input:checked + .radio-label { background-image: linear-gradient(to right, #6366f1, #8b5cf6); border-color: #6366f1; color: white; box-shadow: 0 0 15px rgba(99, 102, 241, 0.3); }
+.file-upload-label { border: 2px dashed #3f3f46; background-color: #18181b; transition: all 0.2s ease-in-out; }
+.file-upload-label:hover { border-color: #6366f1; background-color: #27272a; }
+
+/* --- New Listing Card, My Listings & Popup Styles --- */
+.listing-card {
+    background: #161616;
+    border: 1px solid #2f2f2f;
+    border-radius: 24px;
+    overflow: hidden;
+    box-shadow: 0 15px 40px rgba(0, 0, 0, 0.7);
+    width: 100%;
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+}
+.listing-card:hover { transform: translateY(-10px) scale(1.02); box-shadow: 0 25px 55px rgba(0, 0, 0, 0.7), 0 0 20px rgba(139, 92, 246, 0.4); }
+.product-image-container { position: relative; background: #000; height: 250px; border-bottom: 1px solid #2f2f2f; }
+.product-image { width: 100%; height: 100%; object-fit: cover; display: block; }
+.wishlist-btn { position: absolute; top: 20px; right: 20px; background-color: rgba(0, 0, 0, 0.3); border: 1px solid #2f2f2f; border-radius: 50%; width: 45px; height: 45px; cursor: pointer; color: #A0AEC0; font-size: 20px; transition: all 0.3s ease; backdrop-filter: blur(8px); box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5); display: flex; justify-content: center; align-items: center; }
+.wishlist-btn:hover { background-color: #ff007f; color: #fff; transform: scale(1.1); }
+.wishlist-btn.active { font-weight: 900; color: #ff007f; background-color: rgba(255, 0, 127, 0.3); }
+.card-content { padding: 25px; display: flex; flex-direction: column; gap: 18px; flex-grow: 1; }
+.product-header { display: flex; justify-content: space-between; align-items: flex-start; gap: 15px; }
+.product-name { margin: 0; font: 700 1.8rem/1.2 'Poppins', sans-serif; color: #f0f0f0; }
+.product-price { font: 700 1.7rem 'Poppins', sans-serif; color: #6d94f0; white-space: nowrap; }
+.product-category { font: 600 0.9rem 'Poppins', sans-serif; color: #6d94f0; background-color: rgba(0, 242, 255, 0.1); padding: 6px 14px; border-radius: 12px; width: fit-content; border: 1px solid rgba(0, 242, 255, 0.2); }
+.product-description { font: 0.95rem/1.6 'Poppins', sans-serif; color: #A0AEC0; margin: 0; }
+.seller-info { border-top: 1px solid #2f2f2f; padding-top: 18px; display: flex; justify-content: space-between; align-items: center; font-size: 0.85rem; color: #A0AEC0; }
+.seller-tags { display: flex; flex-wrap: wrap; gap: 8px; }
+.seller-tags span { font: 600 0.8rem 'Poppins', sans-serif; padding: 5px 10px; background-color: #252525; border-radius: 8px; }
+.listing-age { font: italic 0.8rem 'Poppins', sans-serif; color: #888; white-space: nowrap; padding-left: 10px; }
+.card-actions { margin-top: auto; padding-top: 10px; display: flex; flex-direction: column; gap: 12px; }
+.secondary-actions { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; }
+.action-btn { font: 600 0.9rem/1 'Poppins', sans-serif; background: #2a2a2a; color: #f0f0f0; border: 1px solid #2f2f2f; padding: 12px; border-radius: 12px; cursor: pointer; transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); gap: 8px; text-transform: uppercase; box-shadow: 0 4px 10px rgba(0, 0, 0, 0.4); display: flex; justify-content: center; align-items: center; }
+.action-btn i { font-size: 1rem; }
+.action-btn:hover { transform: translateY(-3px); box-shadow: 0 8px 15px rgba(0, 0, 0, 0.6); border-color: #6d94f0; }
+.whatsapp-btn i { color: #25d366; }
+.share-btn i { color: #6d94f0; }
+.report-btn i { color: #F6AD55; }
+.view-details-btn { background-image: linear-gradient(to right, #21338c, #c084fc); color: white; border: none; padding: 15px; font-size: 1rem; width: 100%; grid-column: span 3; }
+.view-details-btn:hover { transform: scale(1.03); box-shadow: 0 8px 25px rgba(165, 180, 252, 0.4); border-color: transparent; }
+.my-listing-actions { display: flex; gap: 10px; margin-top: 10px; }
+.my-listing-actions .action-btn { width: 100%; }
+.btn-sold { background-color: #16a34a; color: white; }
+.btn-sold:hover { background-color: #15803d; }
+.btn-delete { background-color: transparent; color: #f87171; border: 1px solid #ef4444; }
+.btn-delete:hover { background-color: #ef4444; color: white; }
+.status-badge { font-size: 0.8rem; font-weight: 600; padding: 4px 12px; border-radius: 9999px; }
+.status-badge.active { background-color: rgba(74, 222, 128, 0.2); color: #86efac; border: 1px solid #4ade80; }
+.status-badge.sold { background-color: rgba(244, 63, 94, 0.2); color: #fda4af; border: 1px solid #f43f5e; }
+.popup { display: none; position: fixed; z-index: 1000; inset: 0; background-color: rgba(0, 0, 0, 0.7); justify-content: center; align-items: center; backdrop-filter: blur(10px); animation: fadeIn 0.4s ease; }
+.popup.show { display: flex; } /* New class to control visibility */
+.popup-content { background-color: #161616; border: 1px solid #2f2f2f; border-radius: 20px; width: 90%; max-width: 600px; max-height: 90vh; padding: 35px; position: relative; overflow-y: auto; animation: popupScaleIn 0.4s ease-out; box-shadow: 0 15px 50px rgba(0, 0, 0, 0.8); }
+.popup-content::-webkit-scrollbar { width: 8px; }
+.popup-content::-webkit-scrollbar-track { background: #2a2a2a; border-radius: 10px; }
+.popup-content::-webkit-scrollbar-thumb { background-color: #6d94f0; border-radius: 10px; border: 2px solid #2a2a2a; }
+.close-btn { position: absolute; top: 20px; right: 25px; color: #A0AEC0; font: bold 35px sans-serif; cursor: pointer; transition: color 0.2s ease, transform 0.2s ease; }
+.close-btn:hover { color: #F6AD55; transform: rotate(90deg); }
+.popup-title { font-size: 2.2rem; background: -webkit-linear-gradient(left, #a5b4fc, #c084fc); -webkit-background-clip: text; -webkit-text-fill-color: transparent; text-align: center; border-bottom: 2px solid #a5b4fc; padding-bottom: 15px; margin: 0 0 25px 0; }
+.popup-info p { margin-bottom: 15px; color: #A0AEC0; font: 1rem/1.7 'Poppins', sans-serif; }
+.popup-info strong { color: #6d94f0; font-weight: 600; margin-right: 8px; }
+.popup-image-carousel { position: relative; margin-bottom: 25px; border-radius: 16px; overflow: hidden; background: #252525; }
+.carousel-images-container { display: flex; overflow-x: auto; scroll-snap-type: x mandatory; -webkit-overflow-scrolling: touch; scrollbar-width: none; scroll-behavior: smooth; }
+.carousel-images-container::-webkit-scrollbar { display: none; }
+.carousel-img { width: 100%; flex-shrink: 0; scroll-snap-align: start; object-fit: contain; height: 350px; }
+.carousel-btn { position: absolute; top: 50%; transform: translateY(-50%); background-color: rgba(0, 0, 0, 0.4); color: white; border: none; border-radius: 50%; width: 44px; height: 44px; font-size: 22px; cursor: pointer; transition: background-color 0.2s ease; z-index: 10; display: flex; justify-content: center; align-items: center; }
+.carousel-btn.prev { left: 15px; }
+.carousel-btn.next { right: 15px; }
+.form-group label { display: block; margin-bottom: 10px; color: #6d94f0; font: 600 1rem 'Poppins', sans-serif; }
+.form-group select, .form-group textarea { width: 100%; padding: 14px; background-color: #2a2a2a; border: 1px solid #2f2f2f; border-radius: 12px; color: #f0f0f0; font-size: 1rem; box-sizing: border-box; transition: border-color 0.2s, box-shadow 0.2s; }
+#report-submit-btn { width: 100%; padding: 16px; font: 700 1.1rem 'Poppins', sans-serif; background-color: #F6AD55; color: white; border: none; border-radius: 12px; cursor: pointer; transition: all 0.2s ease; }
+.toast { position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%); background-color: #6d94f0; color: #111; padding: 15px 25px; border-radius: 10px; box-shadow: 0 5px 15px rgba(0, 242, 255, 0.3); z-index: 2000; font-weight: 600; opacity: 0; visibility: hidden; transition: opacity 0.3s ease, transform 0.3s ease, visibility 0.3s; }
+.toast.show { opacity: 1; visibility: visible; transform: translate(-50%, -10px); }
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+@keyframes popupScaleIn { from { transform: scale(0.9); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+
+/* src/index.css */
+
+/* --- Modern Filter & Sort Popup --- */
+
+/* Overall Form Layout */
+.filter-popup-form {
+    color: var(--text-light);
+    max-height: 70vh;
+    display: flex;
+    flex-direction: column;
+}
+
+.filter-content {
+    overflow-y: auto;
+    padding-right: 1rem; /* Space for the scrollbar */
+    flex-grow: 1;
+}
+
+.filter-section {
+    padding-bottom: 1.25rem;
+    margin-bottom: 1.25rem;
+    border-bottom: 1px solid var(--border-color);
+}
+.filter-section:last-child {
+    border-bottom: none;
+    margin-bottom: 0;
+}
+
+.filter-title {
+    font-size: 1rem;
+    font-weight: 600;
+    margin-bottom: 0.75rem;
+    color: var(--text-lighter);
+}
+
+/* Custom Radio Pills (for Gender/Sort) */
+.radio-pill-group {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+}
+.radio-pill-group input[type="radio"] {
+    display: none; /* Hide the actual radio button */
+}
+.radio-pill-group label {
+    padding: 0.5rem 1rem;
+    border-radius: 9999px;
+    background-color: var(--surface-dark-lighter);
+    border: 1px solid var(--border-color);
+    cursor: pointer;
+    transition: all 0.2s ease-in-out;
+    font-size: 0.875rem;
+    font-weight: 500;
+}
+.radio-pill-group input[type="radio"]:checked + label {
+    background-color: #4f46e5; /* Indigo */
+    color: white;
+    border-color: #6366f1;
+}
+.radio-pill-group label:hover {
+    border-color: #818cf8; /* Lighter Indigo */
+}
+
+/* --- Custom Multi-Select Dropdown Component --- */
+.multi-select-dropdown {
+    position: relative;
+    height: 100%; /* Make the container fill the parent height */
+}
+.multi-select-button {
+    width: 100%;
+    height: 100%; /* Make the button fill the container height */
+    text-align: left;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background-color: var(--input-background); /* Explicitly set the background */
+    border: 1px solid var(--border-color);
+    padding: 0.75rem 1rem;
+    border-radius: 0.5rem;
+    color: var(--text-light);
+    transition: border-color 0.2s;
+}
+
+.multi-select-button:hover {
+    border-color: #818cf8; /* Lighter Indigo */
+}
+
+.multi-select-button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.multi-select-dropdown .dropdown-panel {
+    position: absolute;
+    top: calc(100% + 0.5rem); 
+    left: 0;
+    right: 0;
+    background-color: var(--surface-dark-deep);
+    border: 1px solid var(--border-color);
+    border-radius: 0.5rem;
+    z-index: 50; 
+    max-height: 15rem;
+    overflow-y: auto;
+    padding: 0.5rem;
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.3), 0 4px 6px -2px rgba(0, 0, 0, 0.15);
+}
+.dropdown-panel label {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.6rem 0.75rem;
+    cursor: pointer;
+    border-radius: 0.375rem;
+    transition: background-color 0.2s;
+    font-size: 0.875rem;
+}
+.dropdown-panel label:hover {
+    background-color: var(--surface-dark-lighter);
+}
+/* --- NEW: Stylish Custom Checkbox --- */
+.custom-checkbox {
+    appearance: none;
+    -webkit-appearance: none;
+    height: 1.25rem;
+    width: 1.25rem;
+    min-width: 1.25rem;
+    background-color: var(--surface-dark-lighter);
+    border: 1px solid var(--border-color);
+    border-radius: 0.25rem;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease-in-out;
+}
+.custom-checkbox::after {
+    content: "✔";
+    font-size: 0.8rem;
+    color: white;
+    opacity: 0;
+    transform: scale(0.5);
+    transition: all 0.2s ease-in-out;
+}
+.custom-checkbox:checked {
+    background-color: #4f46e5; /* Indigo */
+    border-color: #6366f1;
+}
+.custom-checkbox:checked::after {
+    opacity: 1;
+    transform: scale(1);
+}
+
+/* Form Actions Footer */
+.filter-actions {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding-top: 1rem;
+    border-top: 1px solid var(--border-color);
+    flex-shrink: 0;
+}
+.clear-button {
+    background: none;
+    border: none;
+    color: var(--text-light);
+    font-weight: 600;
+    padding: 0.5rem 1rem;
+    border-radius: 0.5rem;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+.clear-button:hover {
+    background-color: var(--surface-dark-lighter);
+}
+.apply-button {
+    background-color: #4f46e5;
+    color: white;
+    font-weight: 600;
+    padding: 0.5rem 1.5rem;
+    border-radius: 0.5rem;
+    border: none;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+.apply-button:hover {
+    background-color: #6366f1;
+}
+
+/* Custom Scrollbar for Filter Popup */
+.custom-scrollbar::-webkit-scrollbar {
+    width: 8px;
+}
+.custom-scrollbar::-webkit-scrollbar-track {
+    background: var(--surface-dark-lighter);
+    border-radius: 10px;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb {
+    background-color: #4f46e5;
+    border-radius: 10px;
+    border: 2px solid var(--surface-dark-lighter);
+}
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+    background-color: #6366f1;
+}
