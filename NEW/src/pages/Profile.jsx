@@ -3,6 +3,7 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faCalendarAlt, faVenusMars, faArrowRight, faPencilAlt, faCamera, faEnvelope } from '@fortawesome/free-solid-svg-icons';
 import { faWhatsapp } from '@fortawesome/free-brands-svg-icons';
 import { useProfile } from '../context/ProfileContext';
+import { useUI } from '../context/UIContext';
 
 // --- Constants (No changes) ---
 const hostels = {
@@ -25,6 +26,7 @@ const getInitialFormData = (profile = null) => ({
 
 const Profile = () => {
     const { profile, loading: profileLoading, updateProfile } = useProfile();
+    const { showToast } = useUI();
     const [isEditing, setIsEditing] = useState(false);
     const [formData, setFormData] = useState(getInitialFormData());
     const [isSubmitting, setIsSubmitting] = useState(false);
@@ -53,8 +55,15 @@ const Profile = () => {
 
     const handleChange = (e) => {
         const { name, value } = e.target;
+
         if (name === "isHosteller") {
             setFormData(prev => ({ ...prev, isHosteller: value === 'yes' }));
+        } else if (name === "whatsappNumber") {
+            // Only allow numbers and limit to 10 digits
+            const numericValue = value.replace(/[^0-9]/g, '');
+            if (numericValue.length <= 10) {
+                setFormData(prev => ({ ...prev, [name]: numericValue }));
+            }
         } else {
             setFormData(prev => ({ ...prev, [name]: value }));
         }
@@ -65,6 +74,13 @@ const Profile = () => {
 
     const handleSubmit = async (e) => {
         e.preventDefault();
+
+        // Validate WhatsApp number before submitting
+        if (formData.whatsappNumber.length !== 10) {
+            showToast("WhatsApp number must be exactly 10 digits.", "error");
+            return; // Stop the submission
+        }
+
         setIsSubmitting(true);
         const { profilePhotoPreview, ...dataToSave } = formData;
         await updateProfile(dataToSave);
@@ -72,10 +88,9 @@ const Profile = () => {
         setIsEditing(false);
     };
 
-    // --- THIS IS THE NEW, MORE ROBUST FUNCTION ---
     const handleEditClick = (event) => {
-        event.preventDefault(); // Explicitly stop the form from submitting
-        setIsEditing(true);      // Set the component to edit mode
+        event.preventDefault();
+        setIsEditing(true);
     };
 
     if (profileLoading) {
@@ -93,8 +108,6 @@ const Profile = () => {
                 </p>
                 <form onSubmit={handleSubmit} className="space-y-6">
                     <fieldset disabled={!isEditing} className="space-y-6">
-                        {/* All your form fields are here, no changes needed inside */}
-                        {/* ... Photo, Name, Email, Course, etc. ... */}
                         <div className="flex justify-center items-center">
                             <div className="relative">
                                 <input type="file" ref={fileInputRef} onChange={handlePhotoChange} className="hidden" accept="image/png, image/jpeg, image/jpg" />
@@ -205,7 +218,19 @@ const Profile = () => {
                                 </div>
                                 <div className="relative w-2/3">
                                     <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3.5"><FontAwesomeIcon icon={faWhatsapp} className="text-zinc-400" /></div>
-                                    <input type="tel" id="whatsappNumber" name="whatsappNumber" value={formData.whatsappNumber} onChange={handleChange} placeholder="98765 43210" className="input-field p-3 pl-10 rounded-lg w-full" required />
+                                    <input 
+                                        type="text" 
+                                        inputMode="numeric" 
+                                        pattern="[0-9]*"
+                                        id="whatsappNumber" 
+                                        name="whatsappNumber" 
+                                        value={formData.whatsappNumber} 
+                                        onChange={handleChange} 
+                                        placeholder="98765 43210" 
+                                        className="input-field p-3 pl-10 rounded-lg w-full" 
+                                        required 
+                                        maxLength="10"
+                                    />
                                 </div>
                             </div>
                         </div>
@@ -221,7 +246,7 @@ const Profile = () => {
                         ) : (
                             <button 
                                 type="button" 
-                                onClick={handleEditClick} // Use the new, robust handler
+                                onClick={handleEditClick}
                                 className="group stylish-button p-4 rounded-lg w-full text-lg font-semibold tracking-wide flex items-center justify-center"
                             >
                                 Edit Profile
@@ -236,4 +261,3 @@ const Profile = () => {
 };
 
 export default Profile;
-

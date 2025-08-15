@@ -5,6 +5,7 @@ import { faRupeeSign, faCloudUploadAlt, faArrowRight } from '@fortawesome/free-s
 import { ProfileContext } from '../context/ProfileContext';
 import { useUI } from '../context/UIContext';
 import { supabase } from '../supabaseClient';
+import imageCompression from 'browser-image-compression'; // <-- IMPORT THE LIBRARY
 
 const categoryOptions = ["Books & Study Material", "Electronics & Gadgets", "Furniture & Room Essentials", "Stationery & Supplies", "Sports & Fitness Gear", "Clothing & Accessories", "Kitchen & Dining", "Tech & Mobile Accessories", "Gaming & Entertainment", "Hobby & Miscellaneous Items"];
 
@@ -21,6 +22,8 @@ const CreateListing = () => {
     const [imageFiles, setImageFiles] = useState([]);
     const [imagePreviews, setImagePreviews] = useState([]);
     const [loading, setLoading] = useState(false);
+    const [loadingMessage, setLoadingMessage] = useState('List My Item');
+
 
     useEffect(() => {
         if (!profile) {
@@ -41,23 +44,33 @@ const CreateListing = () => {
     };
 
     const handleImageChange = (e) => {
+        // Limit to a maximum of 3 images
         const files = Array.from(e.target.files).slice(0, 3);
         setImageFiles(files);
         
+        // Revoke old previews before creating new ones
         imagePreviews.forEach(url => URL.revokeObjectURL(url));
         const previews = files.map(file => URL.createObjectURL(file));
         setImagePreviews(previews);
     };
 
-    // This is the simplified submit function that only handles text data
+    // --- NEW AND IMPROVED handleSubmit FUNCTION ---
     const handleSubmit = async (e) => {
         e.preventDefault();
+        
+        if (imageFiles.length === 0) {
+            showToast("Please select at least one image.", "error");
+            return;
+        }
+
         setLoading(true);
+        setLoadingMessage('Creating listing...');
 
         try {
             const { data: { user } } = await supabase.auth.getUser();
             if (!user) throw new Error("You must be logged in.");
 
+            // --- PHASE 1: Create the listing with textual data ---
             const listingData = {
                 productName: formData.productName,
                 productPrice: formData.productPrice,
@@ -67,18 +80,50 @@ const CreateListing = () => {
                 longDescription: formData.longDescription,
                 seller_id: user.id,
                 status: 'available',
-                // We now save a placeholder URL array
-                imageUrls: [
-                    'https://placehold.co/600x400/1e1e1e/a1a1aa?text=Image+1',
-                    'https://placehold.co/600x400/1e1e1e/a1a1aa?text=Image+2',
-                    'https://placehold.co/600x400/1e1e1e/a1a1aa?text=Image+3'
-                ],
+                // IMPORTANT: We no longer save placeholder imageUrls here
             };
+            
+            const { data: newListing, error: insertError } = await supabase
+                .from('listings')
+                .insert(listingData)
+                .select()
+                .single(); // Use .select().single() to get the created record back
 
-            const { error: insertError } = await supabase.from('listings').insert([listingData]);
             if (insertError) throw insertError;
 
-            showToast("Listing (text only) created successfully!", "success");
+            // --- PHASE 2: Compress and upload images ---
+            setLoadingMessage(`Uploading ${imageFiles.length} image(s)...`);
+
+            const uploadPromises = imageFiles.map(async (file, index) => {
+                // Compress the image
+                const options = {
+                    maxSizeMB: 1,
+                    maxWidthOrHeight: 1920,
+                    useWebWorker: true,
+                };
+                const compressedFile = await imageCompression(file, options);
+
+                // Prepare form data for the Edge Function
+                const uploadFormData = new FormData();
+                uploadFormData.append('image', compressedFile);
+                uploadFormData.append('listing_id', newListing.id);
+                uploadFormData.append('position', index);
+
+                // Invoke the Edge Function
+                const { error: functionError } = await supabase.functions.invoke('listing-image-upload', {
+                    body: uploadFormData,
+                });
+
+                if (functionError) {
+                    // This will make Promise.all fail if any image upload fails
+                    throw new Error(`Failed to upload ${file.name}: ${functionError.message}`);
+                }
+            });
+
+            // Wait for all image uploads to complete
+            await Promise.all(uploadPromises);
+
+            showToast("Listing created successfully!", "success");
             navigate('/my-listings');
 
         } catch (error) {
@@ -87,13 +132,15 @@ const CreateListing = () => {
             showToast(errorMessage, "error");
         } finally {
             setLoading(false);
+            setLoadingMessage('List My Item');
         }
     };
-
+    
+    // ... (the rest of your return statement and JSX is unchanged)
     if (!profile) return null;
 
     const branchAbbreviation = (profile.branch?.match(/\(([^)]+)\)/) || [])[1] || profile.branch;
-
+ 
     return (
         <div id="create-listing" className="content-section">
             <div className="form-container p-8 md:p-12 rounded-2xl w-full max-w-3xl mx-auto">
@@ -118,7 +165,7 @@ const CreateListing = () => {
                         </div>
                     </div>
 
-                    {/* Product Details Section */}
+                    {/* Product Details Section (This part is unchanged) */}
                     <div>
                         <h3 className="text-xl font-semibold text-zinc-200 border-b border-zinc-700 pb-2 mb-6">Product Details</h3>
                         <div className="space-y-6">
@@ -166,7 +213,7 @@ const CreateListing = () => {
                         </div>
                     </div>
 
-                    {/* Product Media Section */}
+                    {/* Product Media Section (This part is unchanged) */}
                     <div>
                         <h3 className="text-xl font-semibold text-zinc-200 border-b border-zinc-700 pb-2 mb-6">Product Media</h3>
                         <div>
@@ -190,7 +237,7 @@ const CreateListing = () => {
                     {/* Submit Button */}
                     <div className="pt-4">
                         <button type="submit" className="group stylish-button p-4 rounded-lg w-full text-lg font-semibold tracking-wide shadow-lg flex items-center justify-center" disabled={loading}>
-                            {loading ? 'Listing...' : 'List My Item'}
+                            {loading ? loadingMessage : 'List My Item'}
                             {!loading && <FontAwesomeIcon icon={faArrowRight} className="ml-2 transition-transform group-hover:translate-x-1" />}
                         </button>
                     </div>

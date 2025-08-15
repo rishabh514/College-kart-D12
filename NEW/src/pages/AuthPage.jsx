@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from "../supabaseClient";
 import { Auth } from '@supabase/auth-ui-react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 
-// Your custom theme variables (no changes needed here)
+// Your custom theme variables (no changes)
 const customTheme = {
   default: {
     colors: {
@@ -63,34 +63,29 @@ const customTheme = {
 };
 
 const AuthPage = () => {
-  const [isLoginView, setIsLoginView] = useState(true);
+  // The 'isLoginView' state is removed to let the Auth component manage its own view state
   const navigate = useNavigate();
 
-  // --- MODIFIED useEffect TO CHECK FOR BANS ---
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
       if (event === 'SIGNED_IN' && session) {
-        // 1. Get the user's profile from the database
         const { data: profile } = await supabase
           .from('profiles')
           .select('banned_until')
           .eq('id', session.user.id)
           .single();
 
-        // 2. Check if the ban expiration date is in the future
         if (profile && profile.banned_until) {
           const banExpires = new Date(profile.banned_until);
           const now = new Date();
 
           if (banExpires > now) {
-            // 3. If banned, show a message and sign the user out immediately
             alert(`You are banned until: ${banExpires.toLocaleString()}.`);
             await supabase.auth.signOut();
-            return; // Stop further execution
+            return;
           }
         }
         
-        // 4. If not banned, proceed to the app
         navigate('/');
       }
     });
@@ -102,39 +97,22 @@ const AuthPage = () => {
     <div className="min-h-screen flex items-center justify-center p-4" style={{ background: 'var(--background-dark)' }}>
       <div className="w-full max-w-md p-8 md:p-12 space-y-8 rounded-2xl" style={{ background: 'var(--surface-dark)' }}>
         <div>
+          {/* A static or dynamic title can go here */}
           <h2 className="text-center text-3xl font-bold text-white">
             <span className="title-gradient">
-              {isLoginView ? 'Welcome Back' : 'Create Your Account'}
+              Welcome to CollegeKart
             </span>
           </h2>
         </div>
 
-        <div className="flex justify-center rounded-lg shadow-sm">
-          <button
-            onClick={() => setIsLoginView(true)}
-            className={`py-2 px-4 w-1/2 rounded-l-lg text-sm font-medium focus:outline-none transition-colors duration-200 ${
-              isLoginView ? 'bg-indigo-600 text-white' : 'bg-zinc-800 hover:bg-zinc-700 text-zinc-300'
-            }`}
-          >
-            Sign In
-          </button>
-          <button
-            onClick={() => setIsLoginView(false)}
-            className={`py-2 px-4 w-1/2 rounded-r-lg text-sm font-medium focus:outline-none transition-colors duration-200 ${
-              !isLoginView ? 'bg-indigo-600 text-white' : 'bg-zinc-800 hover:bg-zinc-700 text-zinc-300'
-            }`}
-          >
-            Sign Up
-          </button>
-        </div>
-
+        {/* The custom toggle buttons are removed */}
         <Auth
           supabaseClient={supabase}
           appearance={{
             theme: 'dark',
             variables: customTheme,
           }}
-          view={isLoginView ? 'sign_in' : 'sign_up'}
+          // The 'view' prop is removed to let the component manage its own state
           providers={['google', 'github']}
           socialLayout="horizontal"
           localization={{
@@ -147,15 +125,25 @@ const AuthPage = () => {
                 email_label: 'Email address',
                 password_label: 'Create a Password',
               },
+              // NEW: Added localization for the forgotten password view
+              forgotten_password: {
+                email_label: 'Email address',
+                button_label: 'Send reset instructions',
+                loading_button_label: 'Sending...',
+              },
             },
           }}
         />
+        <div className="text-center text-sm">
+          <Link to="/forgot-password" className="font-semibold text-indigo-400 hover:underline">
+            Forgot your password?
+          </Link>
+        </div>
       </div>
     </div>
   );
 };
 
 export default AuthPage;
-
 
 
