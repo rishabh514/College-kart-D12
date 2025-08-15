@@ -1,7 +1,7 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 
-// The 'proxy' configuration has been removed as it is not needed for this solution.
+// https://vitejs.dev/config/
 export default defineConfig({
     root: '.',
     plugins: [react()],
