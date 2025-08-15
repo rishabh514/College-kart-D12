@@ -1,0 +1,10 @@
+{
+  "deno.enable": true,
+  "deno.enablePaths": [
+    "supabase/functions"
+  ],
+  // Add this line below, pasting the path you copied in Step 1.
+  // REMEMBER TO USE DOUBLE BACKSLASHES \\ IN THE PATH!
+  "deno.path": "C:\\Users\\Rishabh Gupta\\.deno\\bin\\deno.exe"
+  
+}
