@@ -101,7 +101,7 @@ const AuthPage = () => {
         <div>
           <h2 className="text-center text-3xl font-bold text-white">
             <span className="title-gradient">
-              Welcome to CollegeKart
+              Welcome to CampusThrift
             </span>
           </h2>
         </div>
