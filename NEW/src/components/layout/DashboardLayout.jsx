@@ -43,9 +43,8 @@ const DashboardLayout = () => {
         };
 
         // --- THIS IS THE FIX ---
-        // Added '/create-listing' to allow users to view the page.
-        // The submission logic will be handled within the CreateListing component itself.
-        const allowedPaths = ['/profile', '/marketplace', '/wishlist', '/create-listing'];
+        // Added '/admin' to the array of pages that can be visited with an incomplete profile.
+        const allowedPaths = ['/profile', '/marketplace', '/wishlist', '/create-listing', '/admin'];
 
         if (isProfileDeficient(profile) && !allowedPaths.includes(location.pathname)) {
             const message = !profile 
@@ -96,3 +95,4 @@ const DashboardLayout = () => {
 };
 
 export default DashboardLayout;
+
