@@ -42,7 +42,7 @@ const Sidebar = ({ isOpen, setOpen }) => {
             <div className="flex flex-col h-full">
                 {/* Header with Title and Close Button */}
                 <div className="p-4 flex items-center justify-between h-[77px] border-b border-zinc-700">
-                    <h2 className="text-2xl font-bold title-gradient">College Kart</h2>
+                    <h2 className="text-2xl font-bold title-gradient">CampusThrift</h2>
                     <button onClick={() => setOpen(false)} className="text-[var(--text-secondary)] hover:text-white transition-colors md:hidden">
                         <FontAwesomeIcon icon={faChevronLeft} className="text-xl" />
                     </button>

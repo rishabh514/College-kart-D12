@@ -63,7 +63,6 @@ const customTheme = {
 };
 
 const AuthPage = () => {
-  // The 'isLoginView' state is removed to let the Auth component manage its own view state
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -97,7 +96,6 @@ const AuthPage = () => {
     <div className="min-h-screen flex items-center justify-center p-4" style={{ background: 'var(--background-dark)' }}>
       <div className="w-full max-w-md p-8 md:p-12 space-y-8 rounded-2xl" style={{ background: 'var(--surface-dark)' }}>
         <div>
-          {/* A static or dynamic title can go here */}
           <h2 className="text-center text-3xl font-bold text-white">
             <span className="title-gradient">
               Welcome to CollegeKart
@@ -105,27 +103,26 @@ const AuthPage = () => {
           </h2>
         </div>
 
-        {/* The custom toggle buttons are removed */}
         <Auth
           supabaseClient={supabase}
           appearance={{
-            theme: 'dark',
+            theme: 'light',
             variables: customTheme,
           }}
-          // The 'view' prop is removed to let the component manage its own state
-          providers={['google', 'github']}
+          providers={['google']}
           socialLayout="horizontal"
           localization={{
             variables: {
               sign_in: {
                 email_label: 'Email address',
                 password_label: 'Password',
+                social_provider_text: 'Sign In / Sign Up with', // This text will appear before 'Google'
               },
               sign_up: {
                 email_label: 'Email address',
                 password_label: 'Create a Password',
+                social_provider_text: 'Sign In / Sign Up with',
               },
-              // NEW: Added localization for the forgotten password view
               forgotten_password: {
                 email_label: 'Email address',
                 button_label: 'Send reset instructions',
@@ -145,5 +142,3 @@ const AuthPage = () => {
 };
 
 export default AuthPage;
-
-

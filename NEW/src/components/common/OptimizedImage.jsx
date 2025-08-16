@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 
-const placeholderImage = 'https://via.placeholder.com/400x300.png?text=Image+Not+Available';
+const placeholderImage = 'https://raw.githubusercontent.com/rishabh514/College-kart-D12/main/NEW/src/Image.png.svg';
 
 const OptimizedImage = ({ src, alt, className }) => {
   const [imageSrc, setImageSrc] = useState(src);
