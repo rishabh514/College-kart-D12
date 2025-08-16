@@ -1,9 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect } from 'react';
 import { supabase } from "../supabaseClient";
 import { Auth } from '@supabase/auth-ui-react';
 import { useNavigate, Link } from 'react-router-dom';
 
-// Your custom theme variables (no changes)
 const customTheme = {
   default: {
     colors: {
@@ -84,13 +83,17 @@ const AuthPage = () => {
             return;
           }
         }
-        
+
         navigate('/');
       }
     });
 
     return () => subscription?.unsubscribe();
   }, [navigate]);
+
+  const handleGoogleSignIn = () => {
+    supabase.auth.signInWithOAuth({ provider: 'google' });
+  };
 
   return (
     <div className="min-h-screen flex items-center justify-center p-4" style={{ background: 'var(--background-dark)' }}>
@@ -103,25 +106,54 @@ const AuthPage = () => {
           </h2>
         </div>
 
+        {/* Custom Google Sign-In Button above the Auth component's form */}
+        <button
+          onClick={handleGoogleSignIn}
+          style={{
+            width: '100%',
+            background: '#18181b',
+            color: '#fff',
+            padding: '12px 15px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: '10px',
+            border: 'none',
+            borderRadius: '8px',
+            fontSize: '16px',
+            fontWeight: '400',
+            cursor: 'pointer',
+            marginBottom: '12px',
+          }}
+          aria-label="Sign up or sign in with Google"
+        >
+          <img
+            src="https://raw.githubusercontent.com/rishabh514/College-kart-D12/main/NEW/src/icons8-google-logo.svg"
+            alt="Google logo"
+            style={{ width: '25px', height: '25px' }}
+            loading="lazy"
+          />
+          Sign Up / Sign In with Google
+        </button>
+
+        {/* Auth UI without social providers */}
         <Auth
           supabaseClient={supabase}
           appearance={{
             theme: 'light',
             variables: customTheme,
           }}
-          providers={['google']}
+          providers={[]} // no social providers here
           socialLayout="horizontal"
           localization={{
             variables: {
               sign_in: {
                 email_label: 'Email address',
                 password_label: 'Password',
-                social_provider_text: 'Sign In / Sign Up with', // This text will appear before 'Google'
               },
               sign_up: {
                 email_label: 'Email address',
                 password_label: 'Create a Password',
-                social_provider_text: 'Sign In / Sign Up with',
               },
               forgotten_password: {
                 email_label: 'Email address',
@@ -131,6 +163,7 @@ const AuthPage = () => {
             },
           }}
         />
+
         <div className="text-center text-sm">
           <Link to="/forgot-password" className="font-semibold text-indigo-400 hover:underline">
             Forgot your password?
@@ -142,3 +175,5 @@ const AuthPage = () => {
 };
 
 export default AuthPage;
+
+
