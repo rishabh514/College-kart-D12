@@ -145,7 +145,7 @@ const CreateListing = () => {
                         <div>
                             <h4 className="font-bold">Your profile is incomplete!</h4>
                             <p className="text-sm">
-                                You can fill out the form, but you'll need to complete your profile before you can list an item. 
+                                Complete your profile first to list an item. <br /> 
                                 <Link to="/profile" className="font-semibold underline hover:text-yellow-200 ml-1">
                                     Update your profile now
                                 </Link>
@@ -162,7 +162,7 @@ const CreateListing = () => {
                             <div className="space-y-4">
                                 <div className="grid md:grid-cols-2 gap-4">
                                     <input type="text" value={`${profile.firstName || ''} ${profile.lastName || ''}`} className="input-field p-3 rounded-lg w-full" disabled />
-                                    <input type="text" value={`${branchAbbreviation || ''}, ${profile.year || ''}`} className="input-field p-3 rounded-lg w-full" disabled />
+                                    <input type="text" value={profile?.branch && profile?.year ? `${branchAbbreviation}, ${profile.year}` : `${branchAbbreviation || ''}${profile.year || ''}`} className="input-field p-3 rounded-lg w-full" disabled />
                                 </div>
                                 <div className="grid md:grid-cols-3 gap-4">
                                     <input type="text" value={profile.isHosteller ? (profile.hostelName || 'Hostel not set') : 'Day Scholar'} className="input-field p-3 rounded-lg w-full" disabled />
