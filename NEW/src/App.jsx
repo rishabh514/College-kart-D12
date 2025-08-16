@@ -10,7 +10,7 @@ import { ProductProvider } from './context/ProductContext';
 // Import Layout
 import DashboardLayout from './components/layout/DashboardLayout';
 
-// --- CHANGE 1: Import page components using React.lazy ---
+// Import page components using React.lazy
 const AuthPage = lazy(() => import('./pages/AuthPage'));
 const Profile = lazy(() => import('./pages/Profile'));
 const Marketplace = lazy(() => import('./pages/Marketplace'));
@@ -21,6 +21,7 @@ const AdminPage = lazy(() => import('./pages/AdminPage'));
 const ForgotPassword = lazy(() => import('./pages/ForgotPassword'));
 const UpdatePassword = lazy(() => import('./pages/UpdatePassword'));
 
+// This component checks for admin role before rendering the AdminPage
 const AdminRoute = () => {
     const { profile, loading } = useProfile();
 
@@ -62,7 +63,6 @@ function App() {
     );
   }
 
-  // --- CHANGE 2: Define a loading fallback for Suspense ---
   const loadingFallback = (
     <div className="min-h-screen flex items-center justify-center" style={{ background: 'var(--background-dark)' }}>
       <div className="text-white text-xl">Loading Page...</div>
@@ -74,14 +74,16 @@ function App() {
       <ProfileProvider>
         <ProductProvider>
           <BrowserRouter>
-            {/* --- CHANGE 3: Wrap Routes in a Suspense component --- */}
             <Suspense fallback={loadingFallback}>
               <Routes>
-                <Route path="/auth" element={!session ? <AuthPage /> : <Navigate to="/" />} />
+                {/* --- THIS IS THE CORRECTED LINE --- */}
+                {/* If a session exists, navigate to /marketplace instead of / */}
+                <Route path="/auth" element={!session ? <AuthPage /> : <Navigate to="/marketplace" />} />
                 
                 <Route path="/forgot-password" element={<ForgotPassword />} />
                 <Route path="/update-password" element={<UpdatePassword />} />
 
+                {/* This wrapper handles all protected routes */}
                 <Route element={session ? <DashboardLayout /> : <Navigate to="/auth" />} >
                   <Route path="/" element={<Profile />} />
                   <Route path="/marketplace" element={<Marketplace />} />
@@ -91,6 +93,7 @@ function App() {
                   <Route path="/admin" element={<AdminRoute />} />
                 </Route>
                 
+                {/* Fallback route: If no other route matches, navigate to the main page. */}
                 <Route path="*" element={<Navigate to="/" />} />
               </Routes>
             </Suspense>

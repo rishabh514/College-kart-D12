@@ -1,15 +1,13 @@
 import React, { useState, useContext, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-// --- OPTIMIZATION 1: Tree-shake Font Awesome by importing icons individually ---
+// Tree-shaken Font Awesome icons for performance
 import { faRupeeSign } from '@fortawesome/free-solid-svg-icons/faRupeeSign';
 import { faCloudUploadAlt } from '@fortawesome/free-solid-svg-icons/faCloudUploadAlt';
 import { faArrowRight } from '@fortawesome/free-solid-svg-icons/faArrowRight';
 import { ProfileContext } from '../context/ProfileContext';
 import { useUI } from '../context/UIContext';
 import { supabase } from '../supabaseClient';
-// --- OPTIMIZATION 2: REMOVED static import of browser-image-compression ---
-// import imageCompression from 'browser-image-compression'; // <-- This line is now gone
 
 const categoryOptions = ["Books & Study Material", "Electronics & Gadgets", "Furniture & Room Essentials", "Stationery & Supplies", "Sports & Fitness Gear", "Clothing & Accessories", "Kitchen & Dining", "Tech & Mobile Accessories", "Gaming & Entertainment", "Hobby & Miscellaneous Items"];
 
@@ -28,16 +26,37 @@ const CreateListing = () => {
     const [loading, setLoading] = useState(false);
     const [loadingMessage, setLoadingMessage] = useState('List My Item');
 
-
     useEffect(() => {
-        if (!profile) {
-            showToast("Please create your profile first!", 'error');
-            navigate('/');
+        /**
+         * Checks if the user's profile is missing essential information.
+         * This function runs when the component mounts or when the profile data changes.
+         */
+        const isProfileIncomplete = (profileToCheck) => {
+            // If the profile object hasn't loaded yet, consider it incomplete for now.
+            if (!profileToCheck) return true;
+
+            // List all fields that MUST be filled out.
+            const requiredFields = ['firstName', 'lastName', 'branch', 'year', 'whatsappNumber', 'gender'];
+            
+            // For hostellers, the hostel name is also a required field.
+            if (profileToCheck.isHosteller && !profileToCheck.hostelName) {
+                return true;
+            }
+
+            // Check if any of the required fields are missing or are just empty strings.
+            return requiredFields.some(field => !profileToCheck[field]);
+        };
+
+        // Run the check on the user's profile.
+        if (isProfileIncomplete(profile)) {
+            // If the profile is incomplete, show a helpful message and redirect the user.
+            showToast("Please complete your profile before creating a listing.", 'error');
+            navigate('/'); // Navigate to the root route which is the profile page
         }
     }, [profile, navigate, showToast]);
 
     useEffect(() => {
-        // Clean up object URLs to prevent memory leaks
+        // Clean up object URLs to prevent memory leaks when the component unmounts
         return () => {
             imagePreviews.forEach(url => URL.revokeObjectURL(url));
         }
@@ -48,11 +67,9 @@ const CreateListing = () => {
     };
 
     const handleImageChange = (e) => {
-        // Limit to a maximum of 3 images
         const files = Array.from(e.target.files).slice(0, 3);
         setImageFiles(files);
         
-        // Revoke old previews before creating new ones
         imagePreviews.forEach(url => URL.revokeObjectURL(url));
         const previews = files.map(file => URL.createObjectURL(file));
         setImagePreviews(previews);
@@ -73,7 +90,6 @@ const CreateListing = () => {
             const { data: { user } } = await supabase.auth.getUser();
             if (!user) throw new Error("You must be logged in.");
 
-            // --- PHASE 1: Create the listing with textual data ---
             const listingData = {
                 productName: formData.productName,
                 productPrice: formData.productPrice,
@@ -93,39 +109,21 @@ const CreateListing = () => {
 
             if (insertError) throw insertError;
 
-            // --- PHASE 2: Compress and upload images ---
             setLoadingMessage(`Uploading ${imageFiles.length} image(s)...`);
-
-            // --- OPTIMIZATION 2: Dynamically import the library when it's needed ---
             const imageCompression = (await import('browser-image-compression')).default;
 
             const uploadPromises = imageFiles.map(async (file, index) => {
-                // Compress the image
-                const options = {
-                    maxSizeMB: 1,
-                    maxWidthOrHeight: 1920,
-                    useWebWorker: true,
-                };
+                const options = { maxSizeMB: 1, maxWidthOrHeight: 1920, useWebWorker: true };
                 const compressedFile = await imageCompression(file, options);
-
-                // Prepare form data for the Edge Function
                 const uploadFormData = new FormData();
                 uploadFormData.append('image', compressedFile);
                 uploadFormData.append('listing_id', newListing.id);
                 uploadFormData.append('position', index);
-
-                // Invoke the Edge Function
-                const { error: functionError } = await supabase.functions.invoke('listing-image-upload', {
-                    body: uploadFormData,
-                });
-
-                if (functionError) {
-                    throw new Error(`Failed to upload ${file.name}: ${functionError.message}`);
-                }
+                const { error: functionError } = await supabase.functions.invoke('listing-image-upload', { body: uploadFormData });
+                if (functionError) throw new Error(`Failed to upload ${file.name}: ${functionError.message}`);
             });
 
             await Promise.all(uploadPromises);
-
             showToast("Listing created successfully!", "success");
             navigate('/my-listings');
 
@@ -139,11 +137,12 @@ const CreateListing = () => {
         }
     };
     
-    if (!profile) return null;
+    // This prevents the form from flashing on screen before the redirect logic can run.
+    if (!profile) {
+        return <div className="content-section text-center p-8 text-zinc-400">Loading profile...</div>;
+    }
 
     const branchAbbreviation = (profile.branch?.match(/\(([^)]+)\)/) || [])[1] || profile.branch;
-
-    // --- The JSX below is unchanged ---
  
     return (
         <div id="create-listing" className="content-section">
