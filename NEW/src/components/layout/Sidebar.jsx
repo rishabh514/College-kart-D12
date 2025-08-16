@@ -8,9 +8,26 @@ import { useProfile } from '../../context/ProfileContext';
 import { supabase } from '../../supabaseClient';
 import { useUI } from '../../context/UIContext';
 
-// Navigation items configuration
+// Utility functions
+const getInitials = (firstName, lastName) => {
+    const first = (firstName || '')[0]?.toUpperCase() || '';
+    const last = (lastName || '')[0]?.toUpperCase() || '';
+    return first + last;
+};
+
+const avatarColors = [
+    "#4f46e5", "#db2777", "#059669", "#f59e42", "#5a67d8", "#fbbf24", "#3b82f6", "#34d399", "#ec4899",
+    "#ef4444", "#10b981", "#d97706", "#6d28d9", "#c026d3", "#2563eb", "#22d3ee"
+];
+
+const getRandomColor = (seed) => {
+    let hash = 0;
+    for (let i = 0; i < seed.length; i++) hash = seed.charCodeAt(i) + ((hash << 5) - hash);
+    const idx = Math.abs(hash) % avatarColors.length;
+    return avatarColors[idx];
+};
+
 const navItems = [
-    // Updated route to link directly to the /profile page
     { to: "/profile", icon: faUserCircle, text: "Profile" },
     { to: "/marketplace", icon: faStore, text: "Marketplace" },
     { to: "/create-listing", icon: faPlusCircle, text: "Create Listing" },
@@ -30,11 +47,41 @@ const Sidebar = ({ isOpen, setOpen }) => {
             if (error) {
                 throw error;
             }
-            navigate('/auth'); // Redirect to login page after successful logout
+            navigate('/auth');
         } catch (error) {
             console.error("Logout Error:", error.message);
             showToast("Error logging out: " + error.message, "error");
         }
+    };
+
+    // Avatar logic
+    const renderProfileAvatar = () => {
+        if (profile?.profilePhotoUrl) {
+            return (
+                <img
+                    src={profile.profilePhotoUrl}
+                    alt="User Avatar"
+                    className="w-10 h-10 rounded-full mr-3 object-cover"
+                />
+            );
+        }
+        const initials = getInitials(profile?.firstName, profile?.lastName);
+        const bgColor = getRandomColor(initials);
+        return (
+            <div
+                className="w-10 h-10 rounded-full mr-3 flex items-center justify-center"
+                style={{
+                    backgroundColor: bgColor,
+                    color: "#fff",
+                    fontWeight: "bold",
+                    fontSize: "1.1rem",
+                    userSelect: "none",
+                }}
+                aria-label="User Initials"
+            >
+                {initials || <FontAwesomeIcon icon={faUserCircle} size="lg" />}
+            </div>
+        );
     };
 
     return (
@@ -47,7 +94,7 @@ const Sidebar = ({ isOpen, setOpen }) => {
                         <FontAwesomeIcon icon={faChevronLeft} className="text-xl" />
                     </button>
                 </div>
-                
+
                 {/* Main Navigation */}
                 <nav className="flex-grow p-4 pt-2 space-y-2 overflow-y-auto">
                     <span className="px-4 text-xs font-semibold uppercase text-gray-500 tracking-wider">Menu</span>
@@ -79,15 +126,11 @@ const Sidebar = ({ isOpen, setOpen }) => {
                         </div>
                     )}
                 </nav>
-                
+
                 {/* User Info and Logout Button */}
                 <div className="p-4 border-t border-zinc-700">
                     <div className="flex items-center">
-                        <img 
-                            src={profile?.profilePhotoUrl || `https://ui-avatars.com/api/?name=${profile?.firstName || ' '}+${profile?.lastName || ' '}&background=4f46e5&color=fff`} 
-                            alt="User Avatar" 
-                            className="w-10 h-10 rounded-full mr-3 object-cover" 
-                        />
+                        {renderProfileAvatar()}
                         <div className="flex-grow overflow-hidden">
                             <p className="font-semibold text-sm truncate">{profile ? `${profile.firstName} ${profile.lastName}` : 'Loading...'}</p>
                             <span className="text-xs text-[var(--text-secondary)] truncate">{profile?.email}</span>
