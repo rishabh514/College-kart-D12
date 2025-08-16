@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faRupeeSign, faCloudUploadAlt, faArrowRight, faExclamationTriangle } from '@fortawesome/free-solid-svg-icons';
@@ -46,7 +46,7 @@ const CreateListing = () => {
     const handleImageChange = (e) => {
         const files = Array.from(e.target.files).slice(0, 3);
         setImageFiles(files);
-        
+
         imagePreviews.forEach(url => URL.revokeObjectURL(url));
         const previews = files.map(file => URL.createObjectURL(file));
         setImagePreviews(previews);
@@ -59,7 +59,7 @@ const CreateListing = () => {
             showToast("Please complete your profile before listing an item.", "error");
             return;
         }
-        
+
         if (imageFiles.length === 0) {
             showToast("Please select at least one image.", "error");
             return;
@@ -82,7 +82,7 @@ const CreateListing = () => {
                 seller_id: user.id,
                 status: 'available',
             };
-            
+
             const { data: newListing, error: insertError } = await supabase
                 .from('listings')
                 .insert(listingData)
@@ -96,15 +96,16 @@ const CreateListing = () => {
             const uploadPromises = imageFiles.map(async (file, index) => {
                 const options = { maxSizeMB: 1, maxWidthOrHeight: 1920, useWebWorker: true };
                 const compressedFile = await imageCompression(file, options);
-                
-                const { error: functionError } = await supabase.functions.invoke('listing-image-upload', { 
-                    body: {
-                        image: compressedFile,
-                        listing_id: newListing.id,
-                        position: index,
-                    }
+
+                const uploadFormData = new FormData();
+                uploadFormData.append('image', compressedFile);
+                uploadFormData.append('listing_id', newListing.id);
+                uploadFormData.append('position', index);
+
+                const { error: functionError } = await supabase.functions.invoke('listing-image-upload', {
+                    body: uploadFormData,
                 });
-                
+
                 if (functionError) throw new Error(`Failed to upload ${file.name}: ${functionError.message}`);
             });
 
@@ -121,15 +122,14 @@ const CreateListing = () => {
             setLoadingMessage('List My Item');
         }
     };
-    
-    // Show a loading spinner or placeholder while the profile is being fetched
+
     if (profileLoading) {
-        return <div className="content-section text-center p-8 text-zinc-400">Loading profile...</div>;
+        return <div className="content-section text-center p-8 text-zinc-400">Loading...</div>;
     }
 
     const profileIsDeficient = isProfileIncomplete(profile);
     const branchAbbreviation = (profile?.branch?.match(/\(([^)]+)\)/) || [])[1] || profile?.branch;
- 
+
     return (
         <div id="create-listing" className="content-section">
             <div className="form-container p-8 md:p-12 rounded-2xl w-full max-w-3xl mx-auto">
@@ -137,7 +137,7 @@ const CreateListing = () => {
                     <span className="title-gradient">Create a New Listing</span>
                 </h2>
                 <p className="text-center text-zinc-400 mb-10">Fill in the details to list your item for sale.</p>
-                
+
                 {/* Informational message for users with incomplete profiles */}
                 {profileIsDeficient && (
                     <div className="bg-yellow-900/50 border border-yellow-700 text-yellow-300 px-4 py-3 rounded-lg mb-8 flex items-center gap-4">
@@ -145,7 +145,7 @@ const CreateListing = () => {
                         <div>
                             <h4 className="font-bold">Your profile is incomplete!</h4>
                             <p className="text-sm">
-                                Complete your profile first to list an item. <br /> 
+                                You can fill out the form, but you'll need to complete your profile before you can list an item.
                                 <Link to="/profile" className="font-semibold underline hover:text-yellow-200 ml-1">
                                     Update your profile now
                                 </Link>
@@ -243,7 +243,7 @@ const CreateListing = () => {
                             </div>
                         </div>
                     </div>
-                    
+
                     {/* Submit Button */}
                     <div className="pt-4">
                         <button type="submit" className="group stylish-button p-4 rounded-lg w-full text-lg font-semibold tracking-wide shadow-lg flex items-center justify-center" disabled={isSubmitting || profileIsDeficient}>
