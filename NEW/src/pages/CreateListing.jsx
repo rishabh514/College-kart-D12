@@ -1,18 +1,24 @@
-import React, { useState, useContext, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useState, useEffect, useCallback } from 'react';
+import { useNavigate, Link } from 'react-router-dom';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-// Tree-shaken Font Awesome icons for performance
-import { faRupeeSign } from '@fortawesome/free-solid-svg-icons/faRupeeSign';
-import { faCloudUploadAlt } from '@fortawesome/free-solid-svg-icons/faCloudUploadAlt';
-import { faArrowRight } from '@fortawesome/free-solid-svg-icons/faArrowRight';
-import { ProfileContext } from '../context/ProfileContext';
+import { faRupeeSign, faCloudUploadAlt, faArrowRight, faExclamationTriangle } from '@fortawesome/free-solid-svg-icons';
+import { useProfile } from '../context/ProfileContext';
 import { useUI } from '../context/UIContext';
 import { supabase } from '../supabaseClient';
+import imageCompression from 'browser-image-compression';
 
 const categoryOptions = ["Books & Study Material", "Electronics & Gadgets", "Furniture & Room Essentials", "Stationery & Supplies", "Sports & Fitness Gear", "Clothing & Accessories", "Kitchen & Dining", "Tech & Mobile Accessories", "Gaming & Entertainment", "Hobby & Miscellaneous Items"];
 
+// A helper function to check for an incomplete profile
+const isProfileIncomplete = (p) => {
+    if (!p) return true;
+    const requiredFields = ['firstName', 'lastName', 'branch', 'year', 'whatsappNumber'];
+    if (p.isHosteller && !p.hostelName) return true;
+    return requiredFields.some(field => !p[field]);
+};
+
 const CreateListing = () => {
-    const { profile } = useContext(ProfileContext);
+    const { profile, loading: profileLoading } = useProfile();
     const { showToast } = useUI();
     const navigate = useNavigate();
 
@@ -23,40 +29,11 @@ const CreateListing = () => {
     });
     const [imageFiles, setImageFiles] = useState([]);
     const [imagePreviews, setImagePreviews] = useState([]);
-    const [loading, setLoading] = useState(false);
+    const [isSubmitting, setIsSubmitting] = useState(false);
     const [loadingMessage, setLoadingMessage] = useState('List My Item');
 
+    // Clean up object URLs to prevent memory leaks when the component unmounts
     useEffect(() => {
-        /**
-         * Checks if the user's profile is missing essential information.
-         * This function runs when the component mounts or when the profile data changes.
-         */
-        const isProfileIncomplete = (profileToCheck) => {
-            // If the profile object hasn't loaded yet, consider it incomplete for now.
-            if (!profileToCheck) return true;
-
-            // List all fields that MUST be filled out.
-            const requiredFields = ['firstName', 'lastName', 'branch', 'year', 'whatsappNumber', 'gender'];
-            
-            // For hostellers, the hostel name is also a required field.
-            if (profileToCheck.isHosteller && !profileToCheck.hostelName) {
-                return true;
-            }
-
-            // Check if any of the required fields are missing or are just empty strings.
-            return requiredFields.some(field => !profileToCheck[field]);
-        };
-
-        // Run the check on the user's profile.
-        if (isProfileIncomplete(profile)) {
-            // If the profile is incomplete, show a helpful message and redirect the user.
-            showToast("Please complete your profile before creating a listing.", 'error');
-            navigate('/'); // Navigate to the root route which is the profile page
-        }
-    }, [profile, navigate, showToast]);
-
-    useEffect(() => {
-        // Clean up object URLs to prevent memory leaks when the component unmounts
         return () => {
             imagePreviews.forEach(url => URL.revokeObjectURL(url));
         }
@@ -77,13 +54,18 @@ const CreateListing = () => {
 
     const handleSubmit = async (e) => {
         e.preventDefault();
+
+        if (isProfileIncomplete(profile)) {
+            showToast("Please complete your profile before listing an item.", "error");
+            return;
+        }
         
         if (imageFiles.length === 0) {
             showToast("Please select at least one image.", "error");
             return;
         }
 
-        setLoading(true);
+        setIsSubmitting(true);
         setLoadingMessage('Creating listing...');
 
         try {
@@ -110,16 +92,19 @@ const CreateListing = () => {
             if (insertError) throw insertError;
 
             setLoadingMessage(`Uploading ${imageFiles.length} image(s)...`);
-            const imageCompression = (await import('browser-image-compression')).default;
 
             const uploadPromises = imageFiles.map(async (file, index) => {
                 const options = { maxSizeMB: 1, maxWidthOrHeight: 1920, useWebWorker: true };
                 const compressedFile = await imageCompression(file, options);
-                const uploadFormData = new FormData();
-                uploadFormData.append('image', compressedFile);
-                uploadFormData.append('listing_id', newListing.id);
-                uploadFormData.append('position', index);
-                const { error: functionError } = await supabase.functions.invoke('listing-image-upload', { body: uploadFormData });
+                
+                const { error: functionError } = await supabase.functions.invoke('listing-image-upload', { 
+                    body: {
+                        image: compressedFile,
+                        listing_id: newListing.id,
+                        position: index,
+                    }
+                });
+                
                 if (functionError) throw new Error(`Failed to upload ${file.name}: ${functionError.message}`);
             });
 
@@ -132,17 +117,18 @@ const CreateListing = () => {
             const errorMessage = error instanceof Error ? error.message : "An unknown error occurred.";
             showToast(errorMessage, "error");
         } finally {
-            setLoading(false);
+            setIsSubmitting(false);
             setLoadingMessage('List My Item');
         }
     };
     
-    // This prevents the form from flashing on screen before the redirect logic can run.
-    if (!profile) {
+    // Show a loading spinner or placeholder while the profile is being fetched
+    if (profileLoading) {
         return <div className="content-section text-center p-8 text-zinc-400">Loading profile...</div>;
     }
 
-    const branchAbbreviation = (profile.branch?.match(/\(([^)]+)\)/) || [])[1] || profile.branch;
+    const profileIsDeficient = isProfileIncomplete(profile);
+    const branchAbbreviation = (profile?.branch?.match(/\(([^)]+)\)/) || [])[1] || profile?.branch;
  
     return (
         <div id="create-listing" className="content-section">
@@ -151,21 +137,37 @@ const CreateListing = () => {
                     <span className="title-gradient">Create a New Listing</span>
                 </h2>
                 <p className="text-center text-zinc-400 mb-10">Fill in the details to list your item for sale.</p>
+                
+                {/* Informational message for users with incomplete profiles */}
+                {profileIsDeficient && (
+                    <div className="bg-yellow-900/50 border border-yellow-700 text-yellow-300 px-4 py-3 rounded-lg mb-8 flex items-center gap-4">
+                        <FontAwesomeIcon icon={faExclamationTriangle} className="text-2xl" />
+                        <div>
+                            <h4 className="font-bold">Your profile is incomplete!</h4>
+                            <p className="text-sm">You can fill out the form, but you must complete your profile before you can list an item. <Link to="/profile" className="font-semibold underline hover:text-yellow-200">Go to Profile</Link></p>
+                        </div>
+                    </div>
+                )}
+
                 <form onSubmit={handleSubmit} className="space-y-8">
                     {/* Seller Information Section */}
                     <div>
                         <h3 className="text-xl font-semibold text-zinc-200 border-b border-zinc-700 pb-2 mb-6">Seller Information</h3>
-                        <div className="space-y-4">
-                            <div className="grid md:grid-cols-2 gap-4">
-                                <input type="text" value={`${profile.firstName} ${profile.lastName}`} className="input-field p-3 rounded-lg w-full" disabled />
-                                <input type="text" value={`${branchAbbreviation}, ${profile.year}`} className="input-field p-3 rounded-lg w-full" disabled />
+                        {profile ? (
+                            <div className="space-y-4">
+                                <div className="grid md:grid-cols-2 gap-4">
+                                    <input type="text" value={`${profile.firstName || ''} ${profile.lastName || ''}`} className="input-field p-3 rounded-lg w-full" disabled />
+                                    <input type="text" value={`${branchAbbreviation || ''}, ${profile.year || ''}`} className="input-field p-3 rounded-lg w-full" disabled />
+                                </div>
+                                <div className="grid md:grid-cols-3 gap-4">
+                                    <input type="text" value={profile.isHosteller ? (profile.hostelName || 'Hostel not set') : 'Day Scholar'} className="input-field p-3 rounded-lg w-full" disabled />
+                                    <input type="text" value={(profile.gender?.charAt(0).toUpperCase() + profile.gender?.slice(1)) || ''} className="input-field p-3 rounded-lg w-full" disabled />
+                                    <input type="text" value={`${profile.countryCode || ''} ${profile.whatsappNumber || ''}`} className="input-field p-3 rounded-lg w-full" disabled />
+                                </div>
                             </div>
-                            <div className="grid md:grid-cols-3 gap-4">
-                                <input type="text" value={profile.isHosteller ? profile.hostelName : 'Day Scholar'} className="input-field p-3 rounded-lg w-full" disabled />
-                                <input type="text" value={profile.gender.charAt(0).toUpperCase() + profile.gender.slice(1)} className="input-field p-3 rounded-lg w-full" disabled />
-                                <input type="text" value={`${profile.countryCode} ${profile.whatsappNumber}`} className="input-field p-3 rounded-lg w-full" disabled />
-                            </div>
-                        </div>
+                        ) : (
+                            <p className="text-zinc-400">Your seller information will appear here once your profile is complete.</p>
+                        )}
                     </div>
 
                     {/* Product Details Section */}
@@ -239,9 +241,9 @@ const CreateListing = () => {
                     
                     {/* Submit Button */}
                     <div className="pt-4">
-                        <button type="submit" className="group stylish-button p-4 rounded-lg w-full text-lg font-semibold tracking-wide shadow-lg flex items-center justify-center" disabled={loading}>
-                            {loading ? loadingMessage : 'List My Item'}
-                            {!loading && <FontAwesomeIcon icon={faArrowRight} className="ml-2 transition-transform group-hover:translate-x-1" />}
+                        <button type="submit" className="group stylish-button p-4 rounded-lg w-full text-lg font-semibold tracking-wide shadow-lg flex items-center justify-center" disabled={isSubmitting || profileIsDeficient}>
+                            {isSubmitting ? loadingMessage : 'List My Item'}
+                            {!isSubmitting && <FontAwesomeIcon icon={faArrowRight} className="ml-2 transition-transform group-hover:translate-x-1" />}
                         </button>
                     </div>
                 </form>

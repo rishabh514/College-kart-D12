@@ -5,12 +5,13 @@ import { NavLink, useNavigate } from 'react-router-dom';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faUserCircle, faStore, faPlusCircle, faListUl, faHeart, faChevronLeft, faRightFromBracket, faShieldHalved } from '@fortawesome/free-solid-svg-icons';
 import { useProfile } from '../../context/ProfileContext';
-import { supabase } from '../../supabaseClient'; // Corrected path assumption
+import { supabase } from '../../supabaseClient';
 import { useUI } from '../../context/UIContext';
 
 // Navigation items configuration
 const navItems = [
-    { to: "/", icon: faUserCircle, text: "Profile" },
+    // Updated route to link directly to the /profile page
+    { to: "/profile", icon: faUserCircle, text: "Profile" },
     { to: "/marketplace", icon: faStore, text: "Marketplace" },
     { to: "/create-listing", icon: faPlusCircle, text: "Create Listing" },
     { to: "/my-listings", icon: faListUl, text: "My Listings" },
@@ -23,7 +24,6 @@ const Sidebar = ({ isOpen, setOpen }) => {
     const navigate = useNavigate();
     const sidebarClass = isOpen ? 'translate-x-0' : '-translate-x-full';
 
-    // Logout logic is defined directly in this component
     const handleLogout = async () => {
         try {
             const { error } = await supabase.auth.signOut();

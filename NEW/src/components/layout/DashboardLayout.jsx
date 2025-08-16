@@ -1,16 +1,19 @@
 // DashboardLayout.jsx
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Outlet, useLocation, useNavigate } from 'react-router-dom';
-import { supabase } from '../../supabaseClient'; // Make sure this path is correct
+import { supabase } from '../../supabaseClient';
+import { useProfile } from '../../context/ProfileContext';
+import { useUI } from '../../context/UIContext';
 import Sidebar from './Sidebar';
 import Header from './Header';
 
 const pageTitles = {
-    '/': 'Profile',
+    '/profile': 'Profile',
     '/marketplace': 'Marketplace',
     '/create-listing': 'Create Listing',
     '/my-listings': 'My Listings',
     '/wishlist': 'Wishlist',
+    '/admin': 'Admin Panel',
 };
 
 const AuroraBackground = () => (
@@ -26,27 +29,60 @@ const DashboardLayout = () => {
     const navigate = useNavigate();
     const title = pageTitles[location.pathname] || 'Dashboard';
 
-    // 1. Define the logout function
+    const { profile, loading: profileLoading } = useProfile();
+    const { showToast } = useUI();
+
+    useEffect(() => {
+        if (profileLoading) return;
+
+        const isProfileDeficient = (p) => {
+            if (!p) return true; 
+            const requiredFields = ['firstName', 'lastName', 'branch', 'year', 'whatsappNumber'];
+            if (p.isHosteller && !p.hostelName) return true;
+            return requiredFields.some(field => !p[field]);
+        };
+
+        // --- THIS IS THE FIX ---
+        // Added '/create-listing' to allow users to view the page.
+        // The submission logic will be handled within the CreateListing component itself.
+        const allowedPaths = ['/profile', '/marketplace', '/wishlist', '/create-listing'];
+
+        if (isProfileDeficient(profile) && !allowedPaths.includes(location.pathname)) {
+            const message = !profile 
+                ? "Welcome! Please create your profile to get started." 
+                : "Please complete your profile to access this page.";
+            showToast(message, !profile ? 'info' : 'error');
+            navigate('/profile');
+        }
+    }, [profile, profileLoading, location.pathname, navigate, showToast]);
+
     const handleLogout = async () => {
         try {
             const { error } = await supabase.auth.signOut();
             if (error) throw error;
-            navigate('/login'); // Redirect to the login page after a successful logout
+            navigate('/auth');
         } catch (error) {
             console.error("Error logging out:", error.message);
-            // You might want to display an error message to the user here
+            showToast("Failed to log out.", "error");
         }
     };
+    
+    if (profileLoading) {
+        return (
+            <div className="min-h-screen flex items-center justify-center" style={{ background: 'var(--background-dark)' }}>
+                <div className="text-white text-xl">Loading User Data...</div>
+            </div>
+        );
+    }
 
     return (
         <>
             <AuroraBackground />
             <div className="flex h-screen relative z-10">
-                {/* 2. Pass the handleLogout function as a prop to the Sidebar */}
                 <Sidebar
                     isOpen={isSidebarOpen}
                     setOpen={setSidebarOpen}
-                    onLogout={handleLogout} // Pass the function here
+                    onLogout={handleLogout}
                 />
                 <div id="main-content-wrapper" className="flex-1 flex flex-col overflow-hidden">
                     <Header onMenuClick={() => setSidebarOpen(true)} title={title} />
