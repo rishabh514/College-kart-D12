@@ -1,92 +1,102 @@
 // src/context/ProfileContext.jsx
 
-import React, { createContext, useState, useEffect, useCallback, useContext } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { supabase } from '../supabaseClient';
 import { useUI } from './UIContext';
 
+// 1. Create the context
 export const ProfileContext = createContext();
-export const useProfile = () => useContext(ProfileContext);
 
+// 2. Create the provider component
 export const ProfileProvider = ({ children }) => {
-    const { showToast } = useUI();
+    const { showToast } = useUI(); // Keep your UI context integration
     const [profile, setProfile] = useState(null);
-    const [loading, setLoading] = useState(true);
+    const [session, setSession] = useState(null);
+    const [loading, setLoading] = useState(true); // Always start true
 
-    const fetchProfile = useCallback(async (user) => {
-        try {
-            setLoading(true);
-            const { data, error, status } = await supabase
-                .from('profiles')
-                .select('*')
-                .eq('id', user.id)
-                .single();
-
-            if (error && status !== 406) throw error;
-            if (data) setProfile(data);
-
-        } catch (error) {
-            showToast('Error loading profile data.', 'error');
-            console.error('Error loading profile:', error);
-        } finally {
-            setLoading(false);
-        }
-    }, [showToast]);
-
+    // This effect runs ONCE on mount and sets up the definitive auth listener.
     useEffect(() => {
-        const fetchInitialSession = async () => {
-            const { data: { session } } = await supabase.auth.getSession();
-            if (session) {
-                await fetchProfile(session.user);
-            } else {
-                setLoading(false);
-            }
-        };
-        fetchInitialSession();
-
-        const { data: authListener } = supabase.auth.onAuthStateChange(
+        const { data: { subscription } } = supabase.auth.onAuthStateChange(
             async (_event, session) => {
+                setSession(session);
+
                 if (session) {
-                    await fetchProfile(session.user);
+                    try {
+                        const { data, error } = await supabase
+                            .from('profiles')
+                            .select('*')
+                            .eq('id', session.user.id)
+                            .single();
+                        
+                        if (error && error.code !== 'PGRST116') { // PGRST116 means no rows found, which is not a server error.
+                            console.error('Error fetching profile:', error);
+                        } else {
+                            setProfile(data);
+                        }
+                    } catch (e) {
+                         console.error('Exception while fetching profile:', e);
+                         setProfile(null);
+                    }
                 } else {
                     setProfile(null);
                 }
+                
+                // This is critical: loading becomes false after the FIRST auth event is handled.
+                // It will not be set to true again, preventing flashes on tab focus.
+                setLoading(false);
             }
         );
 
+        // Cleanup the listener on component unmount
         return () => {
-            authListener.subscription?.unsubscribe();
+            subscription.unsubscribe();
         };
-    }, [fetchProfile]);
+    }, []); // <-- CRITICAL: The empty array ensures this runs only ONCE.
 
-    // --- THIS IS THE CORRECTED FUNCTION ---
+    // Your custom updateProfile function, preserved and safe to use.
     const updateProfile = useCallback(async (profileData) => {
-        try {
-            // 1. Get the current user directly from Supabase auth. This is always reliable.
-            const { data: { user } } = await supabase.auth.getUser();
-            if (!user) throw new Error("You must be logged in to update your profile.");
+        const user = session?.user;
+        if (!user) {
+            showToast("You must be logged in to update your profile.", "error");
+            return;
+        }
 
-            // 2. Perform the update WHERE the 'id' column matches the logged-in user's ID.
+        try {
             const { error } = await supabase
                 .from('profiles')
                 .update(profileData)
-                .eq('id', user.id); // Use user.id instead of profile.id
+                .eq('id', user.id);
 
             if (error) throw error;
 
-            // 3. Update the local state to instantly reflect the changes in the UI.
-            setProfile(prevProfile => ({ ...(prevProfile || {}), id: user.id, ...profileData }));
+            // Optimistically update the local state for immediate UI feedback
+            setProfile(prevProfile => ({ ...prevProfile, ...profileData }));
             showToast('Profile Saved Successfully!', 'success');
         } catch (error) {
             console.error("Failed to save profile to Supabase", error);
             showToast('Error saving profile.', 'error');
         }
-    }, [showToast]);
+    }, [session, showToast]);
 
-    const value = { profile, loading, updateProfile };
+    const value = {
+        profile,
+        session,
+        loading,
+        updateProfile // Expose your update function
+    };
 
     return (
         <ProfileContext.Provider value={value}>
             {children}
         </ProfileContext.Provider>
     );
+};
+
+// 3. Custom hook to use the context
+export const useProfile = () => {
+    const context = useContext(ProfileContext);
+    if (context === undefined) {
+        throw new Error('useProfile must be used within a ProfileProvider');
+    }
+    return context;
 };
