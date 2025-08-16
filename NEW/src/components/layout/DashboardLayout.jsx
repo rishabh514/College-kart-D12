@@ -16,11 +16,28 @@ const pageTitles = {
     '/admin': 'Admin Panel',
 };
 
-const AuroraBackground = () => (
-    <div className="aurora-container">
-        <div className="aurora-glow" style={{ backgroundColor: 'var(--vibrant-purple)', width: '40vw', height: '40vw', top: '-10vh', left: '-10vw' }}></div>
-        <div className="aurora-glow" style={{ backgroundColor: 'var(--vibrant-cyan)', width: '30vw', height: '30vw', bottom: '-5vh', right: '-5vw' }}></div>
-    </div>
+// --- NEW: Minimal Grid Background ---
+// This background is more subtle and fits a modern, clean aesthetic.
+const GridBackground = () => (
+    <>
+        <style>
+            {`
+                .grid-background-container {
+                    position: fixed; /* Ensures it covers the whole viewport and stays put */
+                    top: 0;
+                    left: 0;
+                    width: 100vw;
+                    height: 100vh;
+                    background-color: var(--background-dark); /* Your base dark color */
+                    /* Creates a grid of faint dots */
+                    background-image: radial-gradient(circle, rgba(255, 255, 255, 0.07) 1px, transparent 1px);
+                    background-size: 2rem 2rem; /* The spacing of the dots */
+                    z-index: 0; /* Places it behind all other content */
+                }
+            `}
+        </style>
+        <div className="grid-background-container"></div>
+    </>
 );
 
 const DashboardLayout = () => {
@@ -42,8 +59,6 @@ const DashboardLayout = () => {
             return requiredFields.some(field => !p[field]);
         };
 
-        // --- THIS IS THE FIX ---
-        // Added '/admin' to the array of pages that can be visited with an incomplete profile.
         const allowedPaths = ['/profile', '/marketplace', '/wishlist', '/create-listing', '/admin'];
 
         if (isProfileDeficient(profile) && !allowedPaths.includes(location.pathname)) {
@@ -76,7 +91,8 @@ const DashboardLayout = () => {
 
     return (
         <>
-            <AuroraBackground />
+            {/* --- REPLACED AuroraBackground with GridBackground --- */}
+            <GridBackground />
             <div className="flex h-screen relative z-10">
                 <Sidebar
                     isOpen={isSidebarOpen}
@@ -95,4 +111,5 @@ const DashboardLayout = () => {
 };
 
 export default DashboardLayout;
+
 

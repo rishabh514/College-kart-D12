@@ -141,10 +141,15 @@ const CreateListing = () => {
                 {/* Informational message for users with incomplete profiles */}
                 {profileIsDeficient && (
                     <div className="bg-yellow-900/50 border border-yellow-700 text-yellow-300 px-4 py-3 rounded-lg mb-8 flex items-center gap-4">
-                        <FontAwesomeIcon icon={faExclamationTriangle} className="text-2xl" />
+                        <FontAwesomeIcon icon={faExclamationTriangle} className="text-3xl" />
                         <div>
                             <h4 className="font-bold">Your profile is incomplete!</h4>
-                            <p className="text-sm">You can fill out the form, but you must complete your profile before you can list an item. <Link to="/profile" className="font-semibold underline hover:text-yellow-200">Go to Profile</Link></p>
+                            <p className="text-sm">
+                                You can fill out the form, but you'll need to complete your profile before you can list an item. 
+                                <Link to="/profile" className="font-semibold underline hover:text-yellow-200 ml-1">
+                                    Update your profile now
+                                </Link>
+                            </p>
                         </div>
                     </div>
                 )}
