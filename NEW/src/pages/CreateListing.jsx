@@ -44,12 +44,24 @@ const CreateListing = () => {
     };
 
     const handleImageChange = (e) => {
-        const files = Array.from(e.target.files).slice(0, 3);
-        setImageFiles(files);
+        const newFiles = Array.from(e.target.files);
 
+        // Combine the existing files with the new ones
+        const combinedFiles = [...imageFiles, ...newFiles];
+
+        // Enforce the 3-file limit
+        const limitedFiles = combinedFiles.slice(0, 3);
+
+        if (combinedFiles.length > 3) {
+            showToast("You can upload a maximum of 3 images.", "info");
+        }
+
+        setImageFiles(limitedFiles);
+
+        // Clean up old previews before creating new ones
         imagePreviews.forEach(url => URL.revokeObjectURL(url));
-        const previews = files.map(file => URL.createObjectURL(file));
-        setImagePreviews(previews);
+        const newPreviews = limitedFiles.map(file => URL.createObjectURL(file));
+        setImagePreviews(newPreviews);
     };
 
     const handleSubmit = async (e) => {
@@ -138,7 +150,6 @@ const CreateListing = () => {
                 </h2>
                 <p className="text-center text-zinc-400 mb-10">Fill in the details to list your item for sale.</p>
 
-                {/* Informational message for users with incomplete profiles */}
                 {profileIsDeficient && (
                     <div className="bg-yellow-900/50 border border-yellow-700 text-yellow-300 px-4 py-3 rounded-lg mb-8 flex items-center gap-4">
                         <FontAwesomeIcon icon={faExclamationTriangle} className="text-3xl" />
