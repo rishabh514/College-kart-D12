@@ -1,11 +1,15 @@
 import React, { useState, useContext, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faRupeeSign, faCloudUploadAlt, faArrowRight } from '@fortawesome/free-solid-svg-icons';
+// --- OPTIMIZATION 1: Tree-shake Font Awesome by importing icons individually ---
+import { faRupeeSign } from '@fortawesome/free-solid-svg-icons/faRupeeSign';
+import { faCloudUploadAlt } from '@fortawesome/free-solid-svg-icons/faCloudUploadAlt';
+import { faArrowRight } from '@fortawesome/free-solid-svg-icons/faArrowRight';
 import { ProfileContext } from '../context/ProfileContext';
 import { useUI } from '../context/UIContext';
 import { supabase } from '../supabaseClient';
-import imageCompression from 'browser-image-compression'; // <-- IMPORT THE LIBRARY
+// --- OPTIMIZATION 2: REMOVED static import of browser-image-compression ---
+// import imageCompression from 'browser-image-compression'; // <-- This line is now gone
 
 const categoryOptions = ["Books & Study Material", "Electronics & Gadgets", "Furniture & Room Essentials", "Stationery & Supplies", "Sports & Fitness Gear", "Clothing & Accessories", "Kitchen & Dining", "Tech & Mobile Accessories", "Gaming & Entertainment", "Hobby & Miscellaneous Items"];
 
@@ -54,7 +58,6 @@ const CreateListing = () => {
         setImagePreviews(previews);
     };
 
-    // --- NEW AND IMPROVED handleSubmit FUNCTION ---
     const handleSubmit = async (e) => {
         e.preventDefault();
         
@@ -80,19 +83,21 @@ const CreateListing = () => {
                 longDescription: formData.longDescription,
                 seller_id: user.id,
                 status: 'available',
-                // IMPORTANT: We no longer save placeholder imageUrls here
             };
             
             const { data: newListing, error: insertError } = await supabase
                 .from('listings')
                 .insert(listingData)
                 .select()
-                .single(); // Use .select().single() to get the created record back
+                .single();
 
             if (insertError) throw insertError;
 
             // --- PHASE 2: Compress and upload images ---
             setLoadingMessage(`Uploading ${imageFiles.length} image(s)...`);
+
+            // --- OPTIMIZATION 2: Dynamically import the library when it's needed ---
+            const imageCompression = (await import('browser-image-compression')).default;
 
             const uploadPromises = imageFiles.map(async (file, index) => {
                 // Compress the image
@@ -115,12 +120,10 @@ const CreateListing = () => {
                 });
 
                 if (functionError) {
-                    // This will make Promise.all fail if any image upload fails
                     throw new Error(`Failed to upload ${file.name}: ${functionError.message}`);
                 }
             });
 
-            // Wait for all image uploads to complete
             await Promise.all(uploadPromises);
 
             showToast("Listing created successfully!", "success");
@@ -136,10 +139,11 @@ const CreateListing = () => {
         }
     };
     
-    // ... (the rest of your return statement and JSX is unchanged)
     if (!profile) return null;
 
     const branchAbbreviation = (profile.branch?.match(/\(([^)]+)\)/) || [])[1] || profile.branch;
+
+    // --- The JSX below is unchanged ---
  
     return (
         <div id="create-listing" className="content-section">
@@ -165,7 +169,7 @@ const CreateListing = () => {
                         </div>
                     </div>
 
-                    {/* Product Details Section (This part is unchanged) */}
+                    {/* Product Details Section */}
                     <div>
                         <h3 className="text-xl font-semibold text-zinc-200 border-b border-zinc-700 pb-2 mb-6">Product Details</h3>
                         <div className="space-y-6">
@@ -213,7 +217,7 @@ const CreateListing = () => {
                         </div>
                     </div>
 
-                    {/* Product Media Section (This part is unchanged) */}
+                    {/* Product Media Section */}
                     <div>
                         <h3 className="text-xl font-semibold text-zinc-200 border-b border-zinc-700 pb-2 mb-6">Product Media</h3>
                         <div>
