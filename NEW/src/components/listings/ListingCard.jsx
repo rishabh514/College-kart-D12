@@ -15,7 +15,7 @@ const ListingCard = ({ product, onViewDetails, onReport, onToggleWishlist }) => 
     const seller = product.profiles;
     const imageUrl = product.listing_images && product.listing_images.length > 0
         ? product.listing_images[0].image_url
-        : 'https://placehold.co/600x400/1e1e1e/a1a1aa?text=No+Image';
+        : 'https://raw.githubusercontent.com/rishabh514/College-kart-D12/main/NEW/src/Image.png.svg';
     
     const getListingLink = () => {
         const origin = window.location.origin;
