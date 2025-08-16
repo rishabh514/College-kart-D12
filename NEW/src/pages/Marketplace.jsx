@@ -26,7 +26,7 @@ const DetailsPopupContent = ({ product }) => {
             <div className="popup-image-carousel mb-6">
                 {images.length > 1 && (<button onClick={goToPrevious} className="carousel-btn prev">&lt;</button>)}
                 <div className="carousel-images-container">
-                    {images.length > 0 ? (<img src={images[currentIndex].image_url} alt={`${product.productName} - slide ${currentIndex + 1}`} className="carousel-img" />) : (<img src="https://placehold.co/600x400/1e1e1e/a1a1aa?text=No+Image" alt="No image available" className="carousel-img" />)}
+                    {images.length > 0 ? (<img src={images[currentIndex].image_url} alt={`${product.productName} - slide ${currentIndex + 1}`} className="carousel-img" />) : (<img src="https://raw.githubusercontent.com/rishabh514/College-kart-D12/main/NEW/src/Image.png.svg" alt="No image available" className="carousel-img" />)}
                 </div>
                 {images.length > 1 && (<button onClick={goToNext} className="carousel-btn next">&gt;</button>)}
             </div>
