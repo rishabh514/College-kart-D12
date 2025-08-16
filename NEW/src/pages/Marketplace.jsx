@@ -28,8 +28,9 @@ const getRandomColor = (seed) => {
 };
 
 const categoryOptions = [
-    "Books & Notes", "Electronics", "Lab Essentials (Drafter, Apron, etc.)", "Hostel Items (Mattress, Bucket, etc.)",
-    "Cycles", "Other Accessories", "Music & Hobbies", "Sports & Fitness"
+    "Books & Study Material", "Electronics & Gadgets", "Furniture & Room Essentials", "Stationery & Supplies",
+    "Sports & Fitness Gear", "Clothing & Accessories", "Kitchen & Dining", "Tech & Mobile Accessories",
+    "Gaming & Entertainment", "Hobby & Miscellaneous Items"
 ];
 
 const hostels = {
@@ -216,6 +217,8 @@ const defaultFilters = {
     hostels: [],
 };
 
+const ITEMS_PER_PAGE = 9;
+
 const Marketplace = () => {
     const [listings, setListings] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -230,8 +233,35 @@ const Marketplace = () => {
     const location = useLocation();
     const handledShared = useRef(false);
 
-    const fetchListings = useCallback(async (currentFilters) => {
-        setLoading(true);
+    // New state for pagination
+    const [page, setPage] = useState(0);
+    const [hasMore, setHasMore] = useState(true);
+    const [loadingMore, setLoadingMore] = useState(false);
+
+    // Intersection Observer ref for infinite scroll
+    const observer = useRef();
+    const lastListingElementRef = useCallback(node => {
+      if (loading || loadingMore || !hasMore) return;
+      if (observer.current) observer.current.disconnect();
+      observer.current = new IntersectionObserver(entries => {
+        if (entries[0].isIntersecting) {
+          setPage(prevPage => prevPage + 1);
+        }
+      });
+      if (node) observer.current.observe(node);
+    }, [loading, loadingMore, hasMore]);
+
+    const fetchListings = useCallback(async (currentFilters, currentPage = 0) => {
+        if (currentPage === 0) {
+            setLoading(true);
+            setListings([]);
+        } else {
+            setLoadingMore(true);
+        }
+
+        const from = currentPage * ITEMS_PER_PAGE;
+        const to = from + ITEMS_PER_PAGE - 1;
+
         try {
             const { data: { user } } = await supabase.auth.getUser();
             let reportedListingIds = [];
@@ -249,7 +279,8 @@ const Marketplace = () => {
                 .select(`*, created_at, profiles!inner(*), listing_images(*)`)
                 .eq('status', 'available')
                 .eq('approval_status', 'approved')
-                .order(currentFilters.sortBy.column, { ascending: currentFilters.sortBy.ascending });
+                .order(currentFilters.sortBy.column, { ascending: currentFilters.sortBy.ascending })
+                .range(from, to);
 
             if (reportedListingIds.length > 0) {
                 query = query.not('id', 'in', `(${reportedListingIds.join(',')})`);
@@ -270,18 +301,24 @@ const Marketplace = () => {
 
             const { data, error } = await query;
             if (error) throw error;
-            setListings(data || []);
+            
+            setListings(prevListings => [...prevListings, ...(data || [])]);
+            setHasMore((data?.length || 0) === ITEMS_PER_PAGE);
+
         } catch (error) {
             console.error("Error fetching listings:", error);
             showToast("Failed to load listings.", "error");
         } finally {
             setLoading(false);
+            setLoadingMore(false);
         }
     }, [searchTerm, showToast]);
 
     useEffect(() => {
         const timer = setTimeout(() => {
-            fetchListings(filters);
+            // Reset page and listings when filters or search terms change
+            setPage(0);
+            fetchListings(filters, 0);
         }, 500);
         return () => clearTimeout(timer);
     }, [searchTerm, filters, fetchListings]);
@@ -405,19 +442,41 @@ const Marketplace = () => {
 
                 {/* Listings Grid */}
                 <div id="marketplace-grid" className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
-                    {loading ? (
-                        <p className="text-gray-400 col-span-full text-center py-8">Loading listings...</p>
-                    ) : listings.length > 0 ? (
-                        listings.map((listing) => (
-                            <ListingCard
-                                key={listing.id}
-                                product={listing}
-                                onViewDetails={handleViewDetails}
-                                onReport={handleReport}
-                            />
-                        ))
+                    {listings.length > 0 ? (
+                        listings.map((listing, index) => {
+                            if (listings.length === index + 1) {
+                                return (
+                                    <ListingCard
+                                        key={listing.id}
+                                        product={listing}
+                                        onViewDetails={handleViewDetails}
+                                        onReport={handleReport}
+                                        ref={lastListingElementRef}
+                                    />
+                                );
+                            } else {
+                                return (
+                                    <ListingCard
+                                        key={listing.id}
+                                        product={listing}
+                                        onViewDetails={handleViewDetails}
+                                        onReport={handleReport}
+                                    />
+                                );
+                            }
+                        })
                     ) : (
-                        <p className="text-gray-400 col-span-full text-center py-8">No listings found. Try adjusting your search.</p>
+                        loading ? (
+                            <p className="text-gray-400 col-span-full text-center py-8">Loading listings...</p>
+                        ) : (
+                            <p className="text-gray-400 col-span-full text-center py-8">No listings found. Try adjusting your search or filters.</p>
+                        )
+                    )}
+                    {loadingMore && (
+                        <p className="text-gray-400 col-span-full text-center py-4">Loading more listings...</p>
+                    )}
+                    {!hasMore && !loading && listings.length > 0 && (
+                        <p className="text-gray-400 col-span-full text-center py-4">You've seen all the listings!</p>
                     )}
                 </div>
             </div>
