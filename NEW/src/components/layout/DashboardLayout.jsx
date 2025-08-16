@@ -14,6 +14,7 @@ const pageTitles = {
     '/my-listings': 'My Listings',
     '/wishlist': 'Wishlist',
     '/admin': 'Admin Panel',
+    '/info-legal': 'Info & Legal',
 };
 
 // --- NEW: Minimal Grid Background ---
@@ -59,7 +60,7 @@ const DashboardLayout = () => {
             return requiredFields.some(field => !p[field]);
         };
 
-        const allowedPaths = ['/profile', '/marketplace', '/wishlist', '/create-listing', '/admin'];
+        const allowedPaths = ['/profile', '/marketplace', '/wishlist', '/create-listing', '/admin', '/info-legal']; // Add new path here
 
         if (isProfileDeficient(profile) && !allowedPaths.includes(location.pathname)) {
             const message = !profile 

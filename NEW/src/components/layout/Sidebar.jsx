@@ -3,7 +3,7 @@
 import React from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faUserCircle, faStore, faPlusCircle, faListUl, faHeart, faChevronLeft, faRightFromBracket, faShieldHalved } from '@fortawesome/free-solid-svg-icons';
+import { faUserCircle, faStore, faPlusCircle, faListUl, faHeart, faChevronLeft, faRightFromBracket, faShieldHalved, faGavel } from '@fortawesome/free-solid-svg-icons'; // Import faGavel for the new link
 import { useProfile } from '../../context/ProfileContext';
 import { supabase } from '../../supabaseClient';
 import { useUI } from '../../context/UIContext';
@@ -27,12 +27,15 @@ const getRandomColor = (seed) => {
     return avatarColors[idx];
 };
 
+// Updated Navigation items configuration
 const navItems = [
     { to: "/profile", icon: faUserCircle, text: "Profile" },
     { to: "/marketplace", icon: faStore, text: "Marketplace" },
     { to: "/create-listing", icon: faPlusCircle, text: "Create Listing" },
     { to: "/my-listings", icon: faListUl, text: "My Listings" },
     { to: "/wishlist", icon: faHeart, text: "Wishlist" },
+    // NEW: Info and Legal link added here
+    { to: "/info-legal", icon: faGavel, text: "Info & Legal" },
 ];
 
 const Sidebar = ({ isOpen, setOpen }) => {

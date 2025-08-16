@@ -15,6 +15,7 @@ const Wishlist = lazy(() => import('./pages/Wishlist'));
 const AdminPage = lazy(() => import('./pages/AdminPage'));
 const ForgotPassword = lazy(() => import('./pages/ForgotPassword'));
 const UpdatePassword = lazy(() => import('./pages/UpdatePassword'));
+const InfoAndLegal = lazy(() => import('./pages/InfoAndLegal')); // Import the new component
 
 const AdminRoute = () => {
     const { profile, loading } = useProfile();
@@ -69,7 +70,8 @@ function App() {
                                 <Route path="/auth" element={!session ? <AuthPage /> : <Navigate to="/marketplace" replace />} />
                                 <Route path="/forgot-password" element={<ForgotPassword />} />
                                 <Route path="/update-password" element={<UpdatePassword />} />
-
+                                
+                                {/* All dashboard routes are nested inside DashboardLayout */}
                                 <Route element={session ? <DashboardLayout /> : <Navigate to="/auth" replace />}>
                                     {/* Root path redirects to marketplace */}
                                     <Route index element={<Navigate to="/marketplace" replace />} />
@@ -80,6 +82,8 @@ function App() {
                                     <Route path="/my-listings" element={<MyListings />} />
                                     <Route path="/wishlist" element={<Wishlist />} />
                                     <Route path="/admin" element={<AdminRoute />} />
+                                    {/* FIX: Move this route inside to use the dashboard layout */}
+                                    <Route path="/info-legal" element={<InfoAndLegal />} />
                                 </Route>
                                 
                                 <Route path="*" element={<Navigate to="/marketplace" replace />} />
