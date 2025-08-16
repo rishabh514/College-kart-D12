@@ -42,14 +42,22 @@ const CreateListing = () => {
     const handleChange = (e) => {
         setFormData({ ...formData, [e.target.name]: e.target.value });
     };
-
+    
+    // --- MODIFIED: handleImageChange with 15MB raw file validation ---
     const handleImageChange = (e) => {
         const newFiles = Array.from(e.target.files);
 
-        // Combine the existing files with the new ones
-        const combinedFiles = [...imageFiles, ...newFiles];
+        // Validate raw file size (max 15 MB)
+        const validFiles = newFiles.filter(file => {
+            if (file.size > 15 * 1024 * 1024) {
+                showToast(`'${file.name}' is larger than 15 MB and will be skipped.`, "error");
+                return false;
+            }
+            return true;
+        });
 
-        // Enforce the 3-file limit
+        // Combine the existing files with the new valid ones
+        const combinedFiles = [...imageFiles, ...validFiles];
         const limitedFiles = combinedFiles.slice(0, 3);
 
         if (combinedFiles.length > 3) {
@@ -64,6 +72,36 @@ const CreateListing = () => {
         setImagePreviews(newPreviews);
     };
 
+    // --- NEW: Dedicated image compression function ---
+    const compressImage = async (file) => {
+        const options = {
+            maxSizeMB: 0.5,            // Target size under 500 KB
+            maxWidthOrHeight: 1280,    // Resize large images
+            useWebWorker: true,
+            fileType: "image/jpeg",    // Force JPG for better compression
+        };
+
+        try {
+            const compressedFile = await imageCompression(file, options);
+            console.log(
+                `✅ ${file.name} | Original: ${(file.size / 1024 / 1024).toFixed(2)} MB → Compressed: ${(compressedFile.size / 1024).toFixed(2)} KB`
+            );
+
+            // Final check: if compression still results in a file > 500 KB, skip it
+            if (compressedFile.size > 500 * 1024) {
+                showToast(`'${file.name}' could not be compressed under 500 KB and will be skipped.`, "error");
+                return null;
+            }
+
+            return compressedFile;
+        } catch (error) {
+            console.error(`❌ Compression failed for ${file.name}:`, error);
+            showToast(`Could not process '${file.name}'. It will be skipped.`, "error");
+            return null; // Return null if compression fails
+        }
+    };
+
+    // --- MODIFIED: handleSubmit with pre-upload compression step ---
     const handleSubmit = async (e) => {
         e.preventDefault();
 
@@ -102,15 +140,25 @@ const CreateListing = () => {
                 .single();
 
             if (insertError) throw insertError;
+            
+            // Step 1: Compress images before uploading
+            setLoadingMessage('Compressing images...');
+            const compressedFiles = (await Promise.all(imageFiles.map(compressImage))).filter(Boolean); // .filter(Boolean) removes any nulls from failed compressions
 
-            setLoadingMessage(`Uploading ${imageFiles.length} image(s)...`);
+            if (compressedFiles.length === 0) {
+                 // This case handles if all selected images failed compression. We should not proceed.
+                 // We might want to delete the created listing entry if no images can be uploaded.
+                 // For now, we'll just show an error. A more robust solution could delete the orphaned listing.
+                showToast("No images could be prepared for upload. Please try different images.", "error");
+                throw new Error("Image compression failed for all selected files.");
+            }
 
-            const uploadPromises = imageFiles.map(async (file, index) => {
-                const options = { maxSizeMB: 1, maxWidthOrHeight: 1920, useWebWorker: true };
-                const compressedFile = await imageCompression(file, options);
+            // Step 2: Upload the successfully compressed images
+            setLoadingMessage(`Uploading ${compressedFiles.length} image(s)...`);
 
+            const uploadPromises = compressedFiles.map(async (file, index) => {
                 const uploadFormData = new FormData();
-                uploadFormData.append('image', compressedFile);
+                uploadFormData.append('image', file);
                 uploadFormData.append('listing_id', newListing.id);
                 uploadFormData.append('position', index);
 
@@ -134,7 +182,7 @@ const CreateListing = () => {
             setLoadingMessage('List My Item');
         }
     };
-
+    
     if (profileLoading) {
         return <div className="content-section text-center p-8 text-zinc-400">Loading...</div>;
     }
